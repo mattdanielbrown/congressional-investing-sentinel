@@ -6,18 +6,31 @@ import { findTradeClusters } from '@/lib/sentinel';
 
 function App() {
   const { setTrades } = useStore();
+  const [error, setError] = React.useState(null);
 
   useEffect(() => {
-    // 1. Load the raw trades
-    setTrades(tradesData);
-    
-    // 2. The Sentinel identifies clusters
-    const detectedClusters = findTradeClusters(tradesData);
-    
-    // 3. We'll store these clusters in the state (adding it dynamically to store or we'll pass it)
-    useStore.setState({ clusters: detectedClusters });
-    
+    try {
+      console.log('App: useEffect starting...');
+      console.log('tradesData isArray?', Array.isArray(tradesData));
+      
+      // 1. Load the raw trades
+      setTrades(tradesData);
+      
+      // 2. The Sentinel identifies clusters
+      const detectedClusters = findTradeClusters(tradesData);
+      
+      // 3. Store these clusters
+      useStore.setState({ clusters: detectedClusters });
+      console.log('App: useEffect finished successfully.');
+    } catch (err) {
+      console.error('Error in App useEffect:', err);
+      setError(err.toString());
+    }
   }, [setTrades]);
+
+  if (error) {
+    return <div className="p-8 text-red-500 font-bold">Error: {error}</div>;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 font-sans antialiased text-gray-900 dark:text-gray-100">
