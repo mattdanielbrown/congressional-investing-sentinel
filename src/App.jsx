@@ -1,7 +1,24 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import MarketWatch from '@/components/MarketWatch';
+import useStore from '@/store';
+import tradesData from '../data/trades.json';
+import { findTradeClusters } from '@/lib/sentinel';
 
 function App() {
+  const { setTrades } = useStore();
+
+  useEffect(() => {
+    // 1. Load the raw trades
+    setTrades(tradesData);
+    
+    // 2. The Sentinel identifies clusters
+    const detectedClusters = findTradeClusters(tradesData);
+    
+    // 3. We'll store these clusters in the state (adding it dynamically to store or we'll pass it)
+    useStore.setState({ clusters: detectedClusters });
+    
+  }, [setTrades]);
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 font-sans antialiased text-gray-900 dark:text-gray-100">
       <header className="border-b bg-white dark:bg-gray-950 px-6 py-4 flex items-center justify-between sticky top-0 z-10 shadow-sm">

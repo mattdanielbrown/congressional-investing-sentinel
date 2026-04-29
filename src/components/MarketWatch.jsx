@@ -1,19 +1,15 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Activity, ArrowUpRight, TrendingUp, AlertTriangle } from 'lucide-react';
+import { Activity, ArrowUpRight, TrendingUp, AlertTriangle, Users } from 'lucide-react';
 import useStore from '@/store';
 
 export default function MarketWatch() {
-  const { members, trades } = useStore();
+  const { trades, clusters } = useStore();
 
-  // Mock data for initial UI before full API integration
-  const mockTrades = [
-    { id: 1, member: 'Nancy Pelosi', ticker: 'NVDA', type: 'Purchase', amount: '$1M - $5M', conflictScore: 92, date: '2026-04-20' },
-    { id: 2, member: 'Tommy Tuberville', ticker: 'TSLA', type: 'Sale', amount: '$500K - $1M', conflictScore: 45, date: '2026-04-18' },
-    { id: 3, member: 'Ro Khanna', ticker: 'AAPL', type: 'Purchase', amount: '$15K - $50K', conflictScore: 12, date: '2026-04-15' },
-    { id: 4, member: 'Dan Crenshaw', ticker: 'MSFT', type: 'Purchase', amount: '$50K - $100K', conflictScore: 68, date: '2026-04-12' },
-  ];
+  // Fallback to empty array if state isn't populated yet
+  const displayTrades = trades || [];
+  const displayClusters = clusters || [];
 
   return (
     <div className="p-6 space-y-6">
@@ -32,26 +28,91 @@ export default function MarketWatch() {
             <TrendingUp className="w-4 h-4 text-gray-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1,248</div>
-            <p className="text-xs text-gray-500">+12% from last month</p>
+            <div className="text-2xl font-bold">{displayTrades.length}</div>
+            <p className="text-xs text-gray-500">Local mock dataset</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">High Conflict Alerts</CardTitle>
-            <AlertTriangle className="w-4 h-4 text-red-500" />
+            <CardTitle className="text-sm font-medium">Detected Clusters</CardTitle>
+            <AlertTriangle className="w-4 h-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">14</div>
-            <p className="text-xs text-gray-500">Cs &gt; 85 Threshold</p>
+            <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">{displayClusters.length}</div>
+            <p className="text-xs text-gray-500">Multiple members buying same ticker</p>
           </CardContent>
         </Card>
       </div>
 
+      <Card className="border-amber-200 dark:border-amber-900">
+        <CardHeader className="bg-amber-50 dark:bg-amber-950/20">
+          <CardTitle className="text-amber-900 dark:text-amber-100 flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-amber-500" />
+            Sentinel Alerts: Cluster Insider Trading Detected
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-6">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Ticker</TableHead>
+                <TableHead>Members Involved</TableHead>
+                <TableHead>Total Trades</TableHead>
+                <TableHead>Time Window</TableHead>
+                <TableHead>Type</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {displayClusters.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center text-gray-500 py-8">
+                    No active clusters detected in current window.
+                  </TableCell>
+                </TableRow>
+              )}
+              {displayClusters.map((cluster) => (
+                <TableRow key={cluster.id} className="bg-amber-50/50 dark:bg-amber-900/10">
+                  <TableCell>
+                    <div className="flex items-center gap-1 font-mono font-bold text-blue-600 dark:text-blue-400 text-lg">
+                      {cluster.ticker} <ArrowUpRight className="h-4 w-4" />
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-gray-500" />
+                      <span className="font-medium">{cluster.memberCount} Members</span>
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1 max-w-xs truncate">
+                      {cluster.members.join(', ')}
+                    </div>
+                  </TableCell>
+                  <TableCell className="font-medium text-center">
+                    {cluster.totalTrades}
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-sm">
+                      <span className="font-medium">{cluster.startDate}</span> to <span className="font-medium">{cluster.endDate}</span>
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      ({Math.round((new Date(cluster.endDate) - new Date(cluster.startDate)) / (1000 * 60 * 60 * 24))} days)
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                     <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-green-100 text-green-800">
+                      Coordinated Purchase
+                    </span>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+      
       <Card>
         <CardHeader>
-          <CardTitle>Recent Congressional Disclosures</CardTitle>
+          <CardTitle>Recent Disclosures (All)</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -61,17 +122,16 @@ export default function MarketWatch() {
                 <TableHead>Ticker</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Value Range</TableHead>
-                <TableHead>Conflict Score (Cs)</TableHead>
-                <TableHead className="text-right">Date</TableHead>
+                <TableHead className="text-right">Transaction Date</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockTrades.map((trade) => (
-                <TableRow key={trade.id}>
-                  <TableCell className="font-medium">{trade.member}</TableCell>
+              {displayTrades.slice(0, 15).map((trade, idx) => (
+                <TableRow key={idx}>
+                  <TableCell className="font-medium">{trade.name} <span className="text-xs text-gray-500 ml-1">({trade.chamber})</span></TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-1 font-mono font-bold text-blue-600 dark:text-blue-400">
-                      {trade.ticker} <ArrowUpRight className="h-3 w-3" />
+                    <div className="flex items-center gap-1 font-mono font-bold text-gray-700 dark:text-gray-300">
+                      {trade.ticker}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -81,19 +141,8 @@ export default function MarketWatch() {
                       {trade.type}
                     </span>
                   </TableCell>
-                  <TableCell className="text-gray-600">{trade.amount}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-24 bg-gray-200 rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full ${trade.conflictScore > 80 ? 'bg-red-500' : trade.conflictScore > 40 ? 'bg-yellow-500' : 'bg-green-500'}`} 
-                          style={{ width: `${trade.conflictScore}%` }}
-                        />
-                      </div>
-                      <span className="text-sm font-medium text-gray-700">{trade.conflictScore}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right text-sm text-gray-500">{trade.date}</TableCell>
+                  <TableCell className="text-gray-600 text-sm">{trade.amountRange}</TableCell>
+                  <TableCell className="text-right text-sm text-gray-500">{trade.transactionDate}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
